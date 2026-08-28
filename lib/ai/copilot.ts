@@ -15,7 +15,7 @@ import {
   getNowHour,
 } from "@/lib/simulation";
 import { formatHourLabel, formatKg, formatKw, formatKwh, formatRm, formatRmPerYear } from "@/lib/utils/format";
-import { answerWithClaude, CopilotChatMessage, isClaudeConfigured } from "./claudeProvider";
+import { answerWithClaude, COPILOT_MODEL, CopilotChatMessage, isClaudeConfigured } from "./claudeProvider";
 import { getRecommendations, Recommendation } from "./recommendations";
 
 /** Everything the copilot can ground an answer in — one snapshot per question. */
@@ -343,17 +343,24 @@ export async function answerQuestion(
   history?: CopilotChatMessage[]
 ): Promise<CopilotAnswer> {
   const ctx = buildContext();
+  // Dev-only diagnostics so testing can verify which engine answered. Never logs
+  // the API key or any secret — only the model name and attempt/outcome.
+  const debug = process.env.NODE_ENV !== "production";
 
   if (isClaudeConfigured()) {
     try {
+      if (debug) console.log(`[copilot] Claude request attempted (model=${COPILOT_MODEL})`);
       const reply = await answerWithClaude(
         history?.length ? history : [{ role: "user", content: question }],
         JSON.stringify(ctx)
       );
+      if (debug) console.log(`[copilot] Claude request succeeded (model=${COPILOT_MODEL})`);
       return { reply, mode: "claude" };
     } catch (err) {
-      console.error("[copilot] Claude call failed; answering with rule engine:", err);
+      console.error("[copilot] Claude call failed; fallback activated (rule engine):", err);
     }
+  } else if (debug) {
+    console.log("[copilot] ANTHROPIC_API_KEY not set; fallback activated (rule engine)");
   }
 
   return { reply: answerWithRules(question, ctx), mode: "rules" };

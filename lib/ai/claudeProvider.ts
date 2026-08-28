@@ -15,6 +15,13 @@ export function isClaudeConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
+/**
+ * Single source of truth for the Copilot's Claude model. Change it here only —
+ * do not inline model IDs anywhere else. Haiku 4.5 is a lightweight, low-cost,
+ * fast model well suited to short, grounded demo Q&A.
+ */
+export const COPILOT_MODEL = "claude-haiku-4-5";
+
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
@@ -55,7 +62,7 @@ export async function answerWithClaude(
   const messages = history.slice(firstUser).map((m) => ({ role: m.role, content: m.content }));
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-8",
+    model: COPILOT_MODEL,
     max_tokens: 1024,
     system: `${SYSTEM_INSTRUCTIONS}\n\nLIVE FLEET DATA:\n${contextJson}`,
     messages,
