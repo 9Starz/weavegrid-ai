@@ -88,17 +88,6 @@ export async function POST(request: Request) {
   const question = history.slice().reverse().find((m) => m.role === "user")?.content ?? lastUserRaw.content.slice(0, MAX_MESSAGE_CHARS);
   const ip = resolveClientIp(request.headers);
 
-  // TEMPORARY outermost diagnostic: one unconditional line per request so Vercel
-  // logs confirm the function ran and show why Claude may be skipped. Logs ONLY
-  // presence booleans — never keys, tokens, env values, prompts, user text,
-  // IPs, or headers. Remove once the Production Claude path is confirmed.
-  console.log(
-    `[copilot-diag] hasAnthropicKey=${Boolean(process.env.ANTHROPIC_API_KEY)}` +
-      ` hasRedisUrl=${Boolean(process.env.UPSTASH_REDIS_REST_URL)}` +
-      ` hasRedisToken=${Boolean(process.env.UPSTASH_REDIS_REST_TOKEN)}` +
-      ` forceRules=${forceRules}`
-  );
-
   const { reply, mode } = await answerQuestion(question, history, { ip, forceRules });
   return NextResponse.json({ reply, mode });
 }
