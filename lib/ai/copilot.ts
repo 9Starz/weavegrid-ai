@@ -347,6 +347,23 @@ function log(msg: string): void {
   if (process.env.NODE_ENV !== "production") console.log(`[copilot] ${msg}`);
 }
 
+// --- TEMPORARY production diagnostic (gate decision only) --------------------
+// Emits exactly one safe reason token per request (production-visible, unlike
+// log()) so Vercel logs reveal why Claude was skipped or attempted. Logs no API
+// key, Redis token, env values, prompts, or user message text — only the fixed
+// reason token below. REMOVE once the Production Claude path is confirmed.
+function diag(reason: string): void {
+  console.log(`[copilot-diag] ${reason}`);
+}
+/** Maps internal gate reasons to the safe diagnostic tokens. */
+const GATE_DIAG: Record<string, string> = {
+  short_window: "short_window_limit",
+  daily_ip: "daily_ip_limit",
+  global_ceiling: "global_ceiling",
+  redis_unavailable: "redis_unavailable",
+  redis_unconfigured: "redis_unconfigured",
+};
+
 /**
  * Provider seam + public-demo protection gate. When ANTHROPIC_API_KEY is
  * configured, in-scope non-abusive questions from a visitor still within their
@@ -366,6 +383,7 @@ export async function answerQuestion(
 
   // 0. No key, or the input guard already flagged the question as oversized.
   if (!isClaudeConfigured()) {
+    diag("missing_anthropic_key");
     log("ANTHROPIC_API_KEY not set; fallback activated (rule engine)");
     return { reply: answerWithRules(question, ctx), mode: "rules" };
   }
@@ -378,12 +396,14 @@ export async function answerQuestion(
   //    the existing intent patterns as an additional in-domain signal.
   const inScope = isInScope(question) || INTENTS.some((i) => i.match.test(question));
   if (!inScope) {
+    diag("scope_rejected");
     log("scope rejected; returning WeaveGrid redirect (rule engine)");
     return { reply: SCOPE_REDIRECT_MESSAGE, mode: "rules" };
   }
 
   // 2. Obvious prompt-injection / exfiltration attempts never reach Claude.
   if (looksLikeInjection(question)) {
+    diag("injection_rejected");
     log("injection-style input rejected; returning safe redirect (rule engine)");
     return { reply: SCOPE_REDIRECT_MESSAGE, mode: "rules" };
   }
@@ -392,12 +412,14 @@ export async function answerQuestion(
   //    genuine opportunity to spend Anthropic credit. Any block => rule engine.
   const gate = await checkClaudeAllowance(options?.ip ?? "local-dev");
   if (!gate.allow) {
+    diag(GATE_DIAG[gate.reason ?? ""] ?? "gate_rejected");
     log(`Claude skipped (${gate.reason}); fallback activated (rule engine)`);
     return { reply: answerWithRules(question, ctx), mode: "rules" };
   }
 
   // 4. Call Claude; any failure/timeout degrades to the rule engine.
   try {
+    diag("claude_attempted");
     log(`Claude request attempted (model=${COPILOT_MODEL})`);
     const reply = await answerWithClaude(
       history?.length ? history : [{ role: "user", content: question }],
