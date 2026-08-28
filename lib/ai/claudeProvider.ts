@@ -22,15 +22,28 @@ export function isClaudeConfigured(): boolean {
  */
 export const COPILOT_MODEL = "claude-haiku-4-5";
 
+/**
+ * Competition-demo output/latency budget. Kept as named constants so the cost
+ * and wait-time envelope lives in one place.
+ *   - MAX_OUTPUT_TOKENS caps spend and keeps answers demo-length.
+ *   - REQUEST_TIMEOUT_MS bounds how long a judge ever waits on Claude before the
+ *     rule engine answers instead.
+ */
+export const MAX_OUTPUT_TOKENS = 512;
+export const REQUEST_TIMEOUT_MS = 12_000;
+
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
   if (!client) {
     client = new Anthropic({
-      // Chat UX budget: fail fast and let the rule engine answer instead of
-      // leaving the user staring at a typing indicator. Timeout is per attempt.
-      timeout: 20_000,
-      maxRetries: 1,
+      // Fail fast and let the rule engine answer rather than leaving the judge
+      // staring at a typing indicator. maxRetries is 0 (not 1): the rule engine
+      // already provides instant resilience, so a retry would only add up to
+      // another REQUEST_TIMEOUT_MS to the wait for no benefit here. Bounded
+      // latency and predictable cost are preferred for the public demo.
+      timeout: REQUEST_TIMEOUT_MS,
+      maxRetries: 0,
     });
   }
   return client;
@@ -63,7 +76,7 @@ export async function answerWithClaude(
 
   const response = await anthropic.messages.create({
     model: COPILOT_MODEL,
-    max_tokens: 1024,
+    max_tokens: MAX_OUTPUT_TOKENS,
     system: `${SYSTEM_INSTRUCTIONS}\n\nLIVE FLEET DATA:\n${contextJson}`,
     messages,
   });

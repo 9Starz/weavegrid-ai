@@ -16,6 +16,8 @@ import {
 } from "@/lib/simulation";
 import { formatHourLabel, formatKg, formatKw, formatKwh, formatRm, formatRmPerYear } from "@/lib/utils/format";
 import { answerWithClaude, COPILOT_MODEL, CopilotChatMessage, isClaudeConfigured } from "./claudeProvider";
+import { isInScope, looksLikeInjection, SCOPE_REDIRECT_MESSAGE } from "./guard";
+import { checkClaudeAllowance } from "./rateLimit";
 import { getRecommendations, Recommendation } from "./recommendations";
 
 /** Everything the copilot can ground an answer in — one snapshot per question. */
@@ -332,36 +334,79 @@ export interface CopilotAnswer {
   mode: CopilotMode;
 }
 
+/** Per-request context the route supplies for the public-demo protection layer. */
+export interface AnswerOptions {
+  /** Visitor identifier (resolved IP) used only as a rate-limit key. */
+  ip?: string;
+  /** Set by the input guard when the latest question is oversized/unreasonable. */
+  forceRules?: boolean;
+}
+
+/** Concise, dev-only diagnostics. Never logs keys, tokens, or prompt/message text. */
+function log(msg: string): void {
+  if (process.env.NODE_ENV !== "production") console.log(`[copilot] ${msg}`);
+}
+
 /**
- * Provider seam. When ANTHROPIC_API_KEY is configured (server-side env var only),
- * questions go to Claude grounded in the same live context the dashboard renders.
- * If the key is missing, the call fails, or it times out, the deterministic rule
- * engine answers instead — the demo can never break mid-pitch.
+ * Provider seam + public-demo protection gate. When ANTHROPIC_API_KEY is
+ * configured, in-scope non-abusive questions from a visitor still within their
+ * rate limits go to Claude, grounded in the same live context the dashboard
+ * renders. Every other path — missing/invalid key, error, timeout, oversized
+ * input, out-of-scope question, obvious injection, per-IP or global limit
+ * reached, or limiter failure in production — degrades to the deterministic rule
+ * engine. The { reply, mode } contract and provider badge are unchanged: any
+ * protected path simply returns mode "rules".
  */
 export async function answerQuestion(
   question: string,
-  history?: CopilotChatMessage[]
+  history?: CopilotChatMessage[],
+  options?: AnswerOptions
 ): Promise<CopilotAnswer> {
   const ctx = buildContext();
-  // Dev-only diagnostics so testing can verify which engine answered. Never logs
-  // the API key or any secret — only the model name and attempt/outcome.
-  const debug = process.env.NODE_ENV !== "production";
 
-  if (isClaudeConfigured()) {
-    try {
-      if (debug) console.log(`[copilot] Claude request attempted (model=${COPILOT_MODEL})`);
-      const reply = await answerWithClaude(
-        history?.length ? history : [{ role: "user", content: question }],
-        JSON.stringify(ctx)
-      );
-      if (debug) console.log(`[copilot] Claude request succeeded (model=${COPILOT_MODEL})`);
-      return { reply, mode: "claude" };
-    } catch (err) {
-      console.error("[copilot] Claude call failed; fallback activated (rule engine):", err);
-    }
-  } else if (debug) {
-    console.log("[copilot] ANTHROPIC_API_KEY not set; fallback activated (rule engine)");
+  // 0. No key, or the input guard already flagged the question as oversized.
+  if (!isClaudeConfigured()) {
+    log("ANTHROPIC_API_KEY not set; fallback activated (rule engine)");
+    return { reply: answerWithRules(question, ctx), mode: "rules" };
+  }
+  if (options?.forceRules) {
+    log("input rejected (oversized/unreasonable); fallback activated (rule engine)");
+    return { reply: answerWithRules(question, ctx), mode: "rules" };
   }
 
-  return { reply: answerWithRules(question, ctx), mode: "rules" };
+  // 1. Scope gate — keep off-topic questions off the paid Claude path. Reuses
+  //    the existing intent patterns as an additional in-domain signal.
+  const inScope = isInScope(question) || INTENTS.some((i) => i.match.test(question));
+  if (!inScope) {
+    log("scope rejected; returning WeaveGrid redirect (rule engine)");
+    return { reply: SCOPE_REDIRECT_MESSAGE, mode: "rules" };
+  }
+
+  // 2. Obvious prompt-injection / exfiltration attempts never reach Claude.
+  if (looksLikeInjection(question)) {
+    log("injection-style input rejected; returning safe redirect (rule engine)");
+    return { reply: SCOPE_REDIRECT_MESSAGE, mode: "rules" };
+  }
+
+  // 3. Rate limits + global ceiling — consulted only now, so this represents a
+  //    genuine opportunity to spend Anthropic credit. Any block => rule engine.
+  const gate = await checkClaudeAllowance(options?.ip ?? "local-dev");
+  if (!gate.allow) {
+    log(`Claude skipped (${gate.reason}); fallback activated (rule engine)`);
+    return { reply: answerWithRules(question, ctx), mode: "rules" };
+  }
+
+  // 4. Call Claude; any failure/timeout degrades to the rule engine.
+  try {
+    log(`Claude request attempted (model=${COPILOT_MODEL})`);
+    const reply = await answerWithClaude(
+      history?.length ? history : [{ role: "user", content: question }],
+      JSON.stringify(ctx)
+    );
+    log(`Claude request succeeded (model=${COPILOT_MODEL})`);
+    return { reply, mode: "claude" };
+  } catch (err) {
+    console.error("[copilot] Claude call failed; fallback activated (rule engine):", err);
+    return { reply: answerWithRules(question, ctx), mode: "rules" };
+  }
 }
