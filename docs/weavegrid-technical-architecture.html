@@ -132,6 +132,7 @@
   .badge-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
   /* Print */
   @media print{
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     body{background:#fff;}
     .page{margin:0; box-shadow:none; width:210mm; min-height:296mm; page-break-after:always; break-after:page;}
     .page:last-child{page-break-after:auto; break-after:auto;}
@@ -294,9 +295,10 @@
       <span class="tag tag--green">AI &amp; intelligence</span>
       <ul class="clean" style="margin-top:8px;">
         <li><b>@anthropic-ai/sdk 0.110.0</b> — Copilot provider</li>
-        <li><b>claude-opus-4-8</b> — grounded operator Q&amp;A</li>
+        <li><b>claude-haiku-4-5</b> — grounded operator Q&amp;A</li>
+        <li><b>@upstash/redis 1.38 + @upstash/ratelimit 2.0</b> — durable Copilot rate limiting</li>
         <li><b>Rule engines</b> (TypeScript) — forecast, optimize, recommend, validate, screen</li>
-        <li><b>ANTHROPIC_API_KEY</b> — optional, server-side only</li>
+        <li><b>ANTHROPIC_API_KEY</b>, <b>UPSTASH_*</b>, <b>ANTHROPIC_DAILY_CALL_LIMIT</b> — all optional, server-side only</li>
       </ul>
     </div>
   </div>
@@ -315,7 +317,7 @@
 
   <div class="two-col" style="margin-top:14px;">
     <div class="callout">
-      <b>Design principle — dependency minimalism.</b> Seven runtime dependencies. No state manager, no ORM, no data-fetching library, no chart-config sprawl. Fewer moving parts → faster cold starts, smaller attack surface, trivially deployable.
+      <b>Design principle — dependency minimalism.</b> Nine runtime dependencies. No state manager, no ORM, no data-fetching library, no chart-config sprawl. Fewer moving parts → faster cold starts, smaller attack surface, trivially deployable.
     </div>
     <div class="callout callout--green">
       <b>Runs anywhere, breaks nowhere.</b> With no database and no required keys, the app builds and serves entirely from computation. The Copilot degrades gracefully to a rule engine when no key is present — the demo cannot fail mid-presentation.
@@ -502,10 +504,11 @@
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h4 style="font-size:12px;">④ Copilot</h4><span class="tag tag--cyan">Claude + rule fallback</span>
       </div>
-      <p style="margin:5px 0 7px;"><b>Grounded operator Q&amp;A.</b> With <span class="mono">ANTHROPIC_API_KEY</span> set, questions go to <span class="mono">claude-opus-4-8</span> with the full live fleet snapshot as context; otherwise a deterministic intent router answers from the same data.</p>
+      <p style="margin:5px 0 7px;"><b>Grounded operator Q&amp;A.</b> With <span class="mono">ANTHROPIC_API_KEY</span> set, questions go to <span class="mono">claude-haiku-4-5</span> with the full live fleet snapshot as context; otherwise a deterministic intent router answers from the same data.</p>
       <ul class="clean">
         <li><b>Server-only key</b> — never exposed to the browser.</li>
-        <li><b>Fail-safe:</b> 20s timeout / error → rule engine; the UI labels the engine used.</li>
+        <li><b>Pre-Claude gate:</b> scope + prompt-injection checks and per-IP + global rate limits run first; any block answers from rules (see §10).</li>
+        <li><b>Fail-safe:</b> 12s timeout / error → rule engine; the UI labels the engine used.</li>
         <li><b>Grounding:</b> RM pricing, TOU windows, 0.4 kg CO₂/kWh baked into the system prompt.</li>
       </ul>
     </div>
@@ -517,7 +520,7 @@
     <div class="flow-arrow">→</div>
     <div class="node node--cyan"><span class="nt">answerQuestion()</span><span class="nd">build live context</span></div>
     <div class="flow-arrow">→</div>
-    <div class="node" style="border-color:rgba(39,174,96,.4);"><span class="nt">key set?</span><span class="nd">Claude ↔ rules</span></div>
+    <div class="node" style="border-color:rgba(39,174,96,.4);"><span class="nt">key + gate?</span><span class="nd">scope · inject · limits</span></div>
     <div class="node node--green" style="grid-column:6;"><span class="nt">{ reply, mode }</span><span class="nd">"claude" | "rules"</span></div>
   </div>
 
@@ -637,7 +640,7 @@
     <div class="card">
       <span class="tag tag--brand">API surface</span>
       <h4 style="margin-top:6px;">One route handler</h4>
-      <p><span class="mono">POST /api/copilot/chat</span> (force-dynamic). Validates JSON, extracts the last user message, returns <span class="mono">{ reply, mode }</span>.</p>
+      <p><span class="mono">POST /api/copilot/chat</span> (force-dynamic). Validates JSON, caps history &amp; input size, resolves the client IP for rate limiting, returns <span class="mono">{ reply, mode }</span>.</p>
     </div>
     <div class="card">
       <span class="tag tag--cyan">State</span>
@@ -661,9 +664,10 @@
     <div class="card card--flat">
       <p class="small muted" style="margin-bottom:6px;">Configuration &amp; secrets</p>
       <ul class="clean">
-        <li><span class="mono">ANTHROPIC_API_KEY</span> — optional, server-side env var only</li>
-        <li>No connection strings, no credentials, no user data</li>
-        <li><span class="mono">.env.example</span> documents the single optional var</li>
+        <li><span class="mono">ANTHROPIC_API_KEY</span> — optional; enables the Claude Copilot</li>
+        <li><span class="mono">UPSTASH_REDIS_REST_URL / _TOKEN</span> — optional; durable rate-limit store</li>
+        <li><span class="mono">ANTHROPIC_DAILY_CALL_LIMIT</span> — optional; global daily ceiling (default 200)</li>
+        <li>All optional &amp; server-side only; no DB strings, no user data. <span class="mono">.env.example</span> documents them.</li>
       </ul>
       <div class="callout callout--amber" style="margin-top:8px;">
         <b>No persistence today.</b> Nothing is written to disk or a database. Every value is recomputed per request from the deterministic seed.
@@ -702,7 +706,7 @@
   </div>
   <div class="grid g3" style="margin-top:10px;">
     <div class="card card--flat"><h4 style="font-size:10px;">Build</h4><p><span class="mono">npm run build</span> → optimized server components. No build-time secrets required.</p></div>
-    <div class="card card--flat"><h4 style="font-size:10px;">Runtime env</h4><p>Optional <span class="mono">ANTHROPIC_API_KEY</span> in Project → Environment Variables. Absent = rule-engine Copilot.</p></div>
+    <div class="card card--flat"><h4 style="font-size:10px;">Runtime env</h4><p>Optional <span class="mono">ANTHROPIC_API_KEY</span> (+ <span class="mono">UPSTASH_*</span>) in Project → Environment Variables. Absent = rule-engine Copilot.</p></div>
     <div class="card card--flat"><h4 style="font-size:10px;">Local dev</h4><p><span class="mono">npm run dev</span> → localhost:3000, redirects to <span class="mono">/dashboard</span>.</p></div>
   </div>
 
@@ -713,10 +717,11 @@
         <li><b>Server-only secret.</b> The API key is read only inside the Claude provider module and never imported by client code — never shipped to the browser.</li>
         <li><b>Fail-strict AI.</b> Bad output shapes and refusals throw; the caller falls back rather than surfacing malformed data.</li>
         <li><b>Minimal attack surface.</b> One POST endpoint; JSON validated; no file uploads, no auth tokens, no PII.</li>
+        <li><b>Copilot abuse controls.</b> Scope + prompt-injection guards keep off-topic/abusive input off the paid path; Upstash Redis rate limits — <b>6 / 10 min</b> and <b>20 / day</b> per IP — plus a global daily Claude ceiling (<b>default 200</b>, env-configurable). If Upstash is unavailable/unconfigured in production the Copilot fails safe to rules; server-side caps bound history &amp; input size.</li>
         <li><b>No sensitive data at rest.</b> Nothing persisted; no user accounts in the MVP.</li>
       </ul>
       <div class="callout callout--amber" style="margin-top:8px;">
-        <b>Not yet in place:</b> authentication / RBAC, rate limiting, and tenant isolation — required before real fleet data is connected. Tracked in the roadmap.
+        <b>Not yet in place:</b> authentication / RBAC and tenant isolation — required before real fleet data is connected. Tracked in the roadmap.
       </div>
     </div>
     <div>
@@ -725,7 +730,7 @@
         <li><b>Stateless by design.</b> No shared mutable state between requests → horizontal scaling is automatic on serverless.</li>
         <li><b>Cheap compute.</b> Engines are O(96) over a day's intervals; a full page renders in milliseconds.</li>
         <li><b>Memoization.</b> Day series computed once per seed and reused across all engines within a process.</li>
-        <li><b>Graceful AI degradation.</b> Copilot bounded by a 20s timeout + single retry, then instant rule fallback.</li>
+        <li><b>Graceful AI degradation.</b> Copilot bounded by a 12s timeout, no retry, then instant rule fallback.</li>
       </ul>
       <div class="callout callout--green" style="margin-top:8px;">
         <b>Scale path.</b> Real fleets slot in behind the same engine seams; time-series volume moves to Postgres/Supabase; heavy forecasting can run as a separate model service without touching callers.
@@ -798,7 +803,7 @@
     <div class="card">
       <span class="tag tag--green">Live demo</span>
       <h4 style="margin-top:6px;">WeaveGrid AI — Live Demo</h4>
-      <p class="mono" style="color:var(--brand); margin-top:4px;">wattsync-ai.vercel.app</p>
+      <p class="mono" style="color:var(--brand); margin-top:4px;">weavegrid-ai.vercel.app</p>
       <p style="margin-top:6px;">Zero-config deploy. Open <span class="mono">/demo</span> for the 60-second story; ask <span class="mono">/copilot</span> a live question.</p>
     </div>
     <div class="card">
