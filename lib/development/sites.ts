@@ -72,6 +72,6 @@ export const DEVELOPMENT_STAGES: DevelopmentStage[] = [
   {
     name: "Commissioning & VPP onboarding",
     window: "Months 22–24",
-    detail: "Utility witness testing, then the asset joins the WattSync fleet — monitored, forecast, and dispatched from day one.",
+    detail: "Utility witness testing, then the asset joins the WeaveGrid fleet — monitored, forecast, and dispatched from day one.",
   },
 ];

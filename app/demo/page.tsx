@@ -117,7 +117,7 @@ export default function DemoPage() {
         <SectionCard title="The 60-second takeaway" subtitle="What just happened, in one sentence">
           <p className="max-w-3xl text-sm leading-relaxed text-muted">
             <span className="font-medium text-foreground">
-              WattSync AI turned {decisions.length} coordinated decisions into {formatRm(comparison.costSavedUsd)} of
+              WeaveGrid AI turned {decisions.length} coordinated decisions into {formatRm(comparison.costSavedUsd)} of
               savings — an annualized run-rate of ≈{formatRmPerYear(comparison.costSavedUsd).replace("/yr", " a year")}{" "}
               from this single site — plus {formatKg(comparison.carbonSavedKg)} of avoided CO₂ and a{" "}
               {comparison.peakDemandReductionPct.toFixed(0)}% lower peak

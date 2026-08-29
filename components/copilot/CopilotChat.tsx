@@ -22,7 +22,7 @@ const SUGGESTED_PROMPTS = [
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "I'm the WattSync operations copilot. I have live visibility into your fleet's generation, demand, battery state, forecasts, and AI recommendations. Ask me anything about today's operations — or try one of the suggestions below.",
+    "I'm the WeaveGrid operations copilot. I have live visibility into your fleet's generation, demand, battery state, forecasts, and AI recommendations. Ask me anything about today's operations — or try one of the suggestions below.",
 };
 
 export function CopilotChat() {

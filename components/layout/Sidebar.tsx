@@ -39,7 +39,7 @@ function BrandMark() {
         W
       </span>
       <div>
-        <p className="text-sm font-bold leading-tight text-foreground">WattSync AI</p>
+        <p className="text-sm font-bold leading-tight text-foreground">WeaveGrid AI</p>
         <p className="text-[11px] font-medium leading-tight text-muted">Virtual Power Plant</p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-# WattSync AI — AI-Powered Virtual Power Plant
+# WeaveGrid AI — AI-Powered Virtual Power Plant
 
 **One dashboard that turns disconnected clean-energy assets into a coordinated Virtual Power Plant — and proves, with numbers, that AI coordination cuts cost, carbon, and peak grid stress.**
 
@@ -15,7 +15,7 @@
 
 ## Built for Malaysia 🇲🇾
 
-WattSync AI is a **Malaysia-first clean-energy platform**, modelled on Malaysia's own renewable ecosystem and the national push toward 70% renewable capacity by 2050. The demo fleet spans real Malaysian sites — a **Large Scale Solar (LSS)** park in Kedah, the **Bakun** hydro plant in Sarawak, a **Cyberjaya** battery energy storage system, **Putrajaya** EV fast charging, the **TRX** smart commercial district, and a **Kudat** small-wind pilot — with development screening across Kedah, Selangor, Sarawak and beyond, referencing local frameworks (TNB interconnection, DOE environmental screening, NEM 3.0).
+WeaveGrid AI is a **Malaysia-first clean-energy platform**, modelled on Malaysia's own renewable ecosystem and the national push toward 70% renewable capacity by 2050. The demo fleet spans real Malaysian sites — a **Large Scale Solar (LSS)** park in Kedah, the **Bakun** hydro plant in Sarawak, a **Cyberjaya** battery energy storage system, **Putrajaya** EV fast charging, the **TRX** smart commercial district, and a **Kudat** small-wind pilot — with development screening across Kedah, Selangor, Sarawak and beyond, referencing local frameworks (TNB interconnection, DOE environmental screening, NEM 3.0).
 
 - **Primary mix:** Solar PV · Hydro · Battery Energy Storage · EV infrastructure · Smart buildings
 - **Secondary / emerging:** Small wind pilots (Kudat) · Biomass — the platform scales to these as the fleet grows
@@ -26,7 +26,7 @@ Industrial parks, campuses, and smart cities across Malaysia own solar farms, hy
 
 ## The solution
 
-WattSync AI unifies the whole fleet into one Virtual Power Plant with four AI layers on top:
+WeaveGrid AI unifies the whole fleet into one Virtual Power Plant with four AI layers on top:
 
 | Layer | What it does | Where |
 |---|---|---|

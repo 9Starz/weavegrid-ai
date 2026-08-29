@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WattSync AI — Virtual Power Plant",
+  title: "WeaveGrid AI — Virtual Power Plant",
   description: "AI-powered Virtual Power Plant dashboard: forecasting, optimization, and monitoring for clean energy assets.",
 };
 

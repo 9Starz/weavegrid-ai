@@ -54,7 +54,7 @@ export interface CopilotChatMessage {
   content: string;
 }
 
-const SYSTEM_INSTRUCTIONS = `You are the WattSync AI operations copilot for a Virtual Power Plant (VPP) that coordinates a solar farm, wind turbine, hydro plant, battery array, EV charging hub, and smart building.
+const SYSTEM_INSTRUCTIONS = `You are the WeaveGrid AI operations copilot for a Virtual Power Plant (VPP) that coordinates a solar farm, wind turbine, hydro plant, battery array, EV charging hub, and smart building.
 
 Ground every answer strictly in the LIVE FLEET DATA JSON below — it is a real-time snapshot of the fleet's simulation, 24h forecast, recommendations, optimization decisions, and before/after comparison. Cite specific numbers from it (kW/MW, $, %, kg CO2, times). If the data does not cover a question, say so plainly rather than inventing figures. Never fabricate a number.
 

@@ -1,4 +1,4 @@
-# WattSync AI — Design System
+# WeaveGrid AI — Design System
 
 The single reference for brand, color, type, and layout. Every value here is the **exact token the live app uses** (`app/globals.css`, `lib/utils/chartColors.ts`), so anything built from this doc — pitch deck, one-pager, poster, Figma — will match the product 1:1.
 
@@ -8,7 +8,7 @@ The single reference for brand, color, type, and layout. Every value here is the
 
 ## 1. Brand personality
 
-**WattSync AI is enterprise clean-energy intelligence.** Calm, precise, trustworthy — software a utility, grid operator, or renewable developer would deploy. Reference points: Palantir, Siemens, Schneider Electric, GE Vernova, Tesla Energy.
+**WeaveGrid AI is enterprise clean-energy intelligence.** Calm, precise, trustworthy — software a utility, grid operator, or renewable developer would deploy. Reference points: Palantir, Siemens, Schneider Electric, GE Vernova, Tesla Energy.
 
 - **Feels like:** intelligence · trust · enterprise · innovation · clean energy · AI decision-making
 - **Never:** hackathon prototype · gaming dashboard · consumer app · rainbow gradients · neon
@@ -23,7 +23,7 @@ The single reference for brand, color, type, and layout. Every value here is the
 
 ## 2. Logo
 
-- Wordmark **WattSync AI** + rounded-square "W" glyph.
+- Wordmark **WeaveGrid AI** + rounded-square "W" glyph.
 - Glyph fill: **diagonal gradient, brand blue → AI cyan** (`#0F4C81` → `#00C2FF`, top-left to bottom-right), white "W".
 - Subtitle lockup: "Virtual Power Plant" in muted slate beneath the wordmark.
 - Do **not** use rainbow, multi-stop, or green gradients. Two stops only: blue → cyan.
