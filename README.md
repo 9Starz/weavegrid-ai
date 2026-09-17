@@ -6,16 +6,16 @@
 
 ## ⚡ Judging in a hurry? 60 seconds:
 
-1. 🔗 **Live demo:** **https://wattsync-ai.vercel.app** *(deployed on Vercel, zero config)*
-2. ▶ Open **`/demo`** — a 3-act story: the 6pm problem → three coordinated AI moves → the measurable result (**−23% grid imports, ~RM1,300/day saved ≈ RM466K/yr, 385 kg CO₂ avoided — same assets, same weather**)
-3. ✦ Ask the **`/copilot`**: *"Why did the battery discharge at 6pm?"* — every answer is grounded in the live fleet data
-4. 🎬 **Video walkthrough:** `ADD-VIDEO-LINK-HERE` · 📸 [Screenshots below](#-visual-tour) · 📜 [Full demo script](docs/DEMO.md)
+1. 🔗 **Live demo:** **https://weavegrid-ai.vercel.app** *(deployed on Vercel, zero config)*
+2. ▶ Open **`/demo`** — a 3-act story: the 6pm problem → three coordinated AI moves → the measurable result. Across the simulated days we sampled, coordination cut **grid imports 24.6–43.4%** and avoided **416–806 kg CO₂/day** on identical assets and weather — *illustrative simulation outcomes; `/demo` recomputes them live for the current day.*
+3. ✦ Ask the **`/copilot`**: *"Why did the battery discharge at 6pm?"* — every answer is grounded in the current simulated fleet state
+4. 🎬 **Video walkthrough:** [WeaveGrid AI demo video](https://www.youtube.com/watch?v=7xC6zdrb-8s) · 📸 [Screenshots below](#-visual-tour) · 📜 [Full demo script](docs/DEMO.md)
 
 ---
 
 ## Built for Malaysia 🇲🇾
 
-WeaveGrid AI is a **Malaysia-first clean-energy platform**, modelled on Malaysia's own renewable ecosystem and the national push toward 70% renewable capacity by 2050. The demo fleet spans real Malaysian sites — a **Large Scale Solar (LSS)** park in Kedah, the **Bakun** hydro plant in Sarawak, a **Cyberjaya** battery energy storage system, **Putrajaya** EV fast charging, the **TRX** smart commercial district, and a **Kudat** small-wind pilot — with development screening across Kedah, Selangor, Sarawak and beyond, referencing local frameworks (TNB interconnection, DOE environmental screening, NEM 3.0).
+WeaveGrid AI is a **Malaysia-first clean-energy platform**, modelled on Malaysia's own renewable ecosystem and the national push toward 70% renewable capacity by 2050. The demo fleet models six real Malaysian locations using simulated operational data — a **Large Scale Solar (LSS)** park in Kedah, the **Bakun** hydro plant in Sarawak, a **Cyberjaya** battery energy storage system, **Putrajaya** EV fast charging, the **TRX** smart commercial district, and a **Kudat** small-wind pilot — with development screening across Kedah, Selangor, Sarawak and beyond, referencing local frameworks (TNB interconnection, DOE environmental screening, NEM 3.0).
 
 - **Primary mix:** Solar PV · Hydro · Battery Energy Storage · EV infrastructure · Smart buildings
 - **Secondary / emerging:** Small wind pilots (Kudat) · Biomass — the platform scales to these as the fleet grows
@@ -30,18 +30,18 @@ WeaveGrid AI unifies the whole fleet into one Virtual Power Plant with four AI l
 
 | Layer | What it does | Where |
 |---|---|---|
-| **Development** | Screens candidate sites for the next asset (resource, interconnection, permitting, land), models yield & economics, and shows what today's live fleet would look like with the new asset online | `/development` |
+| **Development** | Screens candidate sites for the next asset (resource, interconnection, permitting, land), models yield & economics, and shows what today's simulated fleet would look like with the new asset online | `/development` |
 | **Forecasting** | Predicts the next 24h of generation & demand with confidence bands, peak timing, surplus/shortage windows, weather impact, and a grid-risk rating | `/forecast` |
 | **Validation** | Scores yesterday's forecast against what actually happened — accuracy, confidence calibration, a named cause for the largest miss, and a 7-day reliability trend. Answers *"why trust the AI?"* | `/validation` |
 | **Recommendations** | Time-aware, grounded advice — each with a reason, expected impact, confidence score, and suggested action | `/dashboard` |
 | **Optimization** | A five-rule decision engine that coordinates battery, EV, and grid flows — and proves its value with a before/after comparison on identical inputs | `/optimization` |
-| **Copilot** | Plain-English operator Q&A grounded in the live fleet, forecast, and optimization state | `/copilot` |
+| **Copilot** | Plain-English operator Q&A grounded in the current simulated fleet, forecast, and optimization state | `/copilot` |
 
 ## The 60-second demo (`/demo`)
 
 1. **The 6pm problem** — buildings and EV chargers peak together as solar dies and power hits RM0.34/kWh.
 2. **Three coordinated moves** — bank free midday renewables in the battery, shift flexible EV charging overnight, discharge the battery through the peak.
-3. **The measurable result** — on the same simulated day with identical assets and weather: **peak demand −8%, grid energy imported −34%, ~RM1,300 saved (an annualized run-rate of ≈RM470K from one site), ~480 kg CO₂ avoided, renewable utilization 93% → 96%** (exact figures vary with each day's simulated weather).
+3. **The measurable result** — *illustrative simulation outcomes, not measured results from a real deployed fleet.* Figures shift with each day's simulated weather, demand, generation, and fleet conditions. Across the simulated days we sampled, AI coordination cut **grid imports 24.6–43.4%**, avoided **416–806 kg CO₂/day**, produced **simulated cost savings of RM1,247–1,408/day**, and lowered **peak demand 7.0–7.9%** — on identical assets and weather. The live `/demo` page recomputes the exact figures for the current day.
 
 Every number on every page derives from one simulation source, so the story is internally consistent and auditable. Full presenter script + recording checklist: [docs/DEMO.md](docs/DEMO.md).
 
@@ -61,7 +61,7 @@ Every number on every page derives from one simulation source, so the story is i
 - **Simulation engine** (`lib/simulation/`) generates a realistic 24h day — solar/wind/hydro curves, building & EV demand, time-of-use prices, weather — in two variants: *raw* (assets uncoordinated) and *AI-optimized* (VPP-coordinated). Deterministic per calendar day, so demos are stable.
 - **Forecasting** (`lib/forecasting/`) is a rule-based persistence+physics model with horizon-widening confidence bands. It sits behind a single `forecastNext24h()` seam — swapping in a trained ML model touches one file, zero callers.
 - **Optimization** (`lib/optimization/`) expresses the five VPP rules (charge on surplus, discharge on peak, delay EVs under stress, export when full, import only when necessary) as a readable rules table, then derives an explainable decision timeline — every action has a time window, magnitude, and a WHY with real numbers.
-- **Copilot** (`lib/ai/copilot.ts` + `lib/ai/claudeProvider.ts`) answers operator questions grounded in the same live data the dashboard shows. With `ANTHROPIC_API_KEY` set (server-side env var, never exposed to the browser) it calls **Anthropic Claude** with the full fleet snapshot as grounding context; without a key — or if the API call fails or times out — a deterministic intent-routing rule engine answers from the same data, so the demo can never break mid-pitch. The UI labels every reply with the engine that produced it.
+- **Copilot** (`lib/ai/copilot.ts` + `lib/ai/claudeProvider.ts`) answers operator questions grounded in the same simulated fleet data the dashboard shows. With `ANTHROPIC_API_KEY` set (server-side env var, never exposed to the browser) it calls **Anthropic Claude** with the full fleet snapshot as grounding context; without a key — or if the API call fails or times out — a deterministic intent-routing rule engine answers from the same data, so the demo can never break mid-pitch. The UI labels every reply with the engine that produced it.
 
 We deliberately labeled what is rule-based as rule-based. The value the judges see — forecasts, decisions, savings — is real computation over the simulated fleet, not canned strings.
 
